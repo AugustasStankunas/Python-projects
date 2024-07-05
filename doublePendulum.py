@@ -1,4 +1,5 @@
 import sys, random
+import numpy as np
 import pygame_widgets
 from pygame_widgets.slider import Slider
 from pygame_widgets.textbox import TextBox
@@ -9,10 +10,22 @@ import pymunk.pygame_util
 
 #initializes the top body (static point on which the pendulum swings)
 def initialize(space):
-    topbody = pymunk.Body(body_type = pymunk.Body.STATIC)
-    topbody.position = (400, 50)
-    topBodyShape = pymunk.Circle(topbody, 5)
-    space.add(topbody, topBodyShape)
+    topBody = pymunk.Body(body_type = pymunk.Body.STATIC)
+    topBody.position = (400, 50)
+    topBodyShape = pymunk.Circle(topBody, 5)
+    space.add(topBody, topBodyShape)
+
+    circleBody = pymunk.Body(40, 50, body_type=pymunk.Body.DYNAMIC)
+    circleBody.position = (400, 200)
+    circleShape = pymunk.Circle(circleBody, 15)
+    joint = pymunk.PinJoint(topBody, circleBody)
+    space.add(circleBody, circleShape, joint)
+
+    circle2Body = pymunk.Body(70, 50, body_type=pymunk.Body.DYNAMIC)
+    circle2Body.position = (400, 350)
+    circle2Shape = pymunk.Circle(circle2Body, 15)
+    joint2 = pymunk.PinJoint(circleBody, circle2Body)
+    space.add(circle2Body, circle2Shape, joint2)
 
 #creates the first ball at position pos and attaches it to the top body by a pin joint
 def firstBall(topBody, space, pos):
@@ -37,7 +50,7 @@ def DrawText(text, x : int, y : int, screen):
     screen.blit(img, (x, y))
 
 #draws all the text on the screen for the sliders and keyboard controls
-def DrawAllText(screen, slider1, slider2, slider3, slider4, slider5):
+def DrawAllText(screen, slider1, slider2, slider3, slider4, slider5, space):
     DrawText(f'Mass of first ball: {slider1.getValue():.2f}', 900, 20, screen)
     DrawText(f'Mass of second ball: {slider2.getValue():.2f}', 880, 100, screen)
     DrawText(f'Momentum of first ball: {slider3.getValue():.2f}', 860, 180, screen)
@@ -60,6 +73,17 @@ def SetDefaultValues(slider1, slider2, slider3, slider4, slider5):
     slider3.setValue(1)
     slider4.setValue(1)
     slider5.setValue(1)
+
+def SetFirstBallPosition(mousePos : tuple[int, int], space):
+    previousX = space.bodies[1].position[0] 
+    previousY = space.bodies[1].position[1]
+    previousDistance = np.sqrt(previousX**2 + previousY**2)
+    space.bodies[1].position = mousePos
+
+def MouseInBall(mousePos : tuple[int, int], ballPos : tuple[int, int], ballSize : int):
+    distance = np.sqrt((mousePos[0] - ballPos[0])**2 + (mousePos[1] - ballPos[1])**2)
+    return distance <= ballSize
+
 
 def main():
     #initializing pygame screen and pymunk space
@@ -86,6 +110,7 @@ def main():
     slider5 = Slider(screen, 880, 390, 200, 10, min=0, max=3, step=0.05, initial = 1)
 
     SetDefaultValues(slider1, slider2, slider3, slider4, slider5)
+
     while True:
         #going through events of the simulation
         for event in pygame.event.get():
@@ -97,22 +122,25 @@ def main():
                 SetDefaultValues(slider1, slider2, slider3, slider4, slider5)
             #if the R button is pressed the game is reset
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                print(space.bodies)
                 space = pymunk.Space()
                 space.gravity = (0.0, 500)
                 initialize(space)
                 circleCount = 0
                 pause = True  
-            #if there is one ball on the screen and the mouse is clicked, the second ball is created at the position of the click             
-            elif circleCount == 1 and event.type == pygame.MOUSEBUTTONDOWN:
-                mousePos = pygame.mouse.get_pos()
-                secondBall(space.bodies[1], space, mousePos)
-                circleCount = -1
+                
+            elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 15):
+                pause = True
+                space.bodies[1].position = pygame.mouse.get_pos()
+            elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 15):
+                pause = True
+                space.bodies[2].position = pygame.mouse.get_pos()
+            elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 15):
                 pause = False
-            #if there are no balls on the screen and the mouse is clicked, the first ball is created at the position of the click
-            elif circleCount == 0 and event.type == pygame.MOUSEBUTTONDOWN:
-                mousePos = pygame.mouse.get_pos()
-                firstBall(space.bodies[0], space, mousePos)
-                circleCount += 1
+            elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 15):
+                pause = False
+
+                
 
         #start of every frame - clearing the screen, updating the simulation, drawing the simulation and updating the sliders
         screen.fill((255,255,255))
@@ -121,7 +149,7 @@ def main():
 
         space.debug_draw(draw_options)
         pygame_widgets.update(pygame.event.get())
-        DrawAllText(screen, slider1, slider2, slider3, slider4, slider5)
+        DrawAllText(screen, slider1, slider2, slider3, slider4, slider5, space)
         
         if circleCount == -1:
             UpdateProperties(slider1.getValue(), slider2.getValue(), slider3.getValue(), slider4.getValue(), slider5.getValue(), space)
@@ -131,3 +159,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+'''
+when second ball is picked up, the first ball stays static and the second ball is moved around the first ball
+when first ball is picked up, it moves around the top body together with the second ball
+'''
