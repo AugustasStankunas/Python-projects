@@ -74,13 +74,13 @@ def SetDefaultValues(slider1, slider2, slider3, slider4, slider5):
     slider4.setValue(1)
     slider5.setValue(1)
 
-def SetFirstBallPosition(mousePos : tuple[int, int], space):
+def SetFirstBallPosition(mousePos : 'tuple[int, int]', space):
     previousX = space.bodies[1].position[0] 
     previousY = space.bodies[1].position[1]
     previousDistance = np.sqrt(previousX**2 + previousY**2)
     space.bodies[1].position = mousePos
 
-def MouseInBall(mousePos : tuple[int, int], ballPos : tuple[int, int], ballSize : int):
+def MouseInBall(mousePos : 'tuple[int, int]', ballPos : 'tuple[int, int]', ballSize : int):
     distance = np.sqrt((mousePos[0] - ballPos[0])**2 + (mousePos[1] - ballPos[1])**2)
     return distance <= ballSize
 
@@ -99,6 +99,8 @@ def main():
     draw_options = pymunk.pygame_util.DrawOptions(screen)
 
     #variables later used for the start of the simulation, where the user places the balls
+    dragFirst = False
+    dragSecond = False
     pause = True
     circleCount = 0
 
@@ -130,15 +132,25 @@ def main():
                 pause = True  
                 
             elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 15):
+                dragFirst = True
                 pause = True
                 space.bodies[1].position = pygame.mouse.get_pos()
             elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 15):
+                dragSecond = True
                 pause = True
                 space.bodies[2].position = pygame.mouse.get_pos()
             elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 15):
+                dragFirst = False
                 pause = False
             elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 15):
+                dragSecond = False
                 pause = False
+            elif event.type == pygame.MOUSEMOTION and dragFirst:
+                space.bodies[1].position = pygame.mouse.get_pos()
+                space.shapes[1].body.position = pygame.mouse.get_pos()
+            elif event.type == pygame.MOUSEMOTION and dragSecond:
+                space.bodies[2].position = pygame.mouse.get_pos()
+                space.shapes[2].body.position = pygame.mouse.get_pos()
 
                 
 
