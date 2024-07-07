@@ -125,6 +125,7 @@ def main():
             #if the R button is pressed the game is reset
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 print(space.bodies)
+                print(space.shapes)
                 space = pymunk.Space()
                 space.gravity = (0.0, 500)
                 initialize(space)
@@ -139,12 +140,9 @@ def main():
                 dragSecond = True
                 pause = True
                 space.bodies[2].position = pygame.mouse.get_pos()
-            elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 15):
+            elif event.type == pygame.MOUSEBUTTONUP:
                 dragFirst = False
-                pause = False
-            elif event.type == pygame.MOUSEBUTTONUP and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 15):
                 dragSecond = False
-                pause = False
             elif event.type == pygame.MOUSEMOTION and dragFirst:
                 space.bodies[1].position = pygame.mouse.get_pos()
                 space.shapes[1].body.position = pygame.mouse.get_pos()
@@ -156,15 +154,14 @@ def main():
 
         #start of every frame - clearing the screen, updating the simulation, drawing the simulation and updating the sliders
         screen.fill((255,255,255))
-        if not pause:
+        if not dragFirst or not dragSecond:
             space.step(1/20)  
 
         space.debug_draw(draw_options)
         pygame_widgets.update(pygame.event.get())
         DrawAllText(screen, slider1, slider2, slider3, slider4, slider5, space)
         
-        if circleCount == -1:
-            UpdateProperties(slider1.getValue(), slider2.getValue(), slider3.getValue(), slider4.getValue(), slider5.getValue(), space)
+        UpdateProperties(slider1.getValue(), slider2.getValue(), slider3.getValue(), slider4.getValue(), slider5.getValue(), space)
 
         clock.tick(60)   
         pygame.display.flip()       
