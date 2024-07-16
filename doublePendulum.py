@@ -8,7 +8,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 
-#initializes the top body (static point on which the pendulum swings)
+#initializes the top body (static point on which the pendulum swings), first ball and second ball with the coordinates given
 def initialize(space, firstBallPos = (400, 200), secondBallPos = (400, 350)):
     topBody = pymunk.Body(body_type = pymunk.Body.STATIC)
     topBody.position = (400, 50)
@@ -54,12 +54,14 @@ def SetDefaultValues(slider1, slider2, slider3, slider4):
     slider3.setValue(1)
     slider4.setValue(1)
 
+#start of method for advanced start system, TODO
 def SetFirstBallPosition(mousePos : 'tuple[int, int]', space):
     previousX = space.bodies[1].position[0] 
     previousY = space.bodies[1].position[1]
     previousDistance = np.sqrt(previousX**2 + previousY**2)
     space.bodies[1].position = mousePos
 
+#checks wether the mouse is in the ball and returns true if yes, false if not
 def MouseInBall(mousePos : 'tuple[int, int]', ballPos : 'tuple[int, int]', ballSize : int):
     distance = np.sqrt((mousePos[0] - ballPos[0])**2 + (mousePos[1] - ballPos[1])**2)
     return distance <= ballSize
@@ -82,7 +84,7 @@ def main():
     dragFirst = False
     dragSecond = False
 
-    #initializing the sliders, used to control the mass, inertia of the balls and gravity
+    #initializing the sliders, used to control the mass of the balls, gravity and time step
     slider1 = Slider(screen, 880, 70, 200, 10, min=0.01, max=3, step=0.05, initial = 1)
     slider2 = Slider(screen, 880, 150, 200, 10, min=0.01, max=3, step=0.05, initial = 1)
     slider3 = Slider(screen, 880, 230, 200, 10, min=0, max=3, step=0.05, initial = 1)
@@ -101,6 +103,7 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 sys.exit(0)
 
+            #When the D button is pressed, the default values in the sliders are set
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
                 SetDefaultValues(slider1, slider2, slider3, slider4)
 
@@ -111,24 +114,28 @@ def main():
                 space = pymunk.Space()
                 space.gravity = (0.0, 300)
                 initialize(space)
-                
+
+            #if the mouse is clicked on the first ball, the first ball starts to follow the mouse    
             elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[1].position, 25):
                 dragFirst = True
-                space.bodies[1].position = pygame.mouse.get_pos()
 
+            #if the mouse is clicked on the second ball, the second ball starts to follow the mouse
             elif event.type == pygame.MOUSEBUTTONDOWN and MouseInBall(pygame.mouse.get_pos(), space.bodies[2].position, 25):
                 dragSecond = True
 
+            #if the mouse is released, either of the balls stop following the mouse
             elif event.type == pygame.MOUSEBUTTONUP:
                 dragFirst = False
                 dragSecond = False
 
+            #if the mouse is moving and the first ball is being dragged, the simulation is updated with the new position of the first ball
             elif event.type == pygame.MOUSEMOTION and dragFirst:
                 secondBallPos = space.bodies[2].position
                 space = pymunk.Space()
                 space.gravity = (0.0, 300)
                 initialize(space, pygame.mouse.get_pos(), secondBallPos)
 
+            #if the mouse is moving and the second ball is being dragged, the simulation is updated with the new position of the second ball
             elif event.type == pygame.MOUSEMOTION and dragSecond:
                 firstBallPos = space.bodies[1].position
                 space = pymunk.Space()
